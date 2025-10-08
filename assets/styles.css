@@ -1,0 +1,188 @@
+:root {
+    --board-size: 6;
+    --cell-size: 64px;
+    --bg-color: #f9fafb;
+    --primary-color: #1e88e5;
+    --accent-color: #d81b60;
+    --text-color: #1f2933;
+    --border-color: #d0d7de;
+    --vehicle-colors: #1e88e5,#43a047,#fb8c00,#8e24aa,#00acc1,#f4511e,#5e35b1,#3949ab;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.app-header,
+.app-footer {
+    text-align: center;
+    padding: 1rem;
+    background-color: #fff;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.app-footer {
+    border-top: 1px solid var(--border-color);
+    border-bottom: none;
+    margin-top: auto;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) minmax(320px, 1fr);
+    gap: 1.5rem;
+    padding: 1.5rem;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.board-panel,
+.control-panel {
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.board-header,
+.board-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.board {
+    position: relative;
+    width: calc(var(--cell-size) * var(--board-size));
+    height: calc(var(--cell-size) * var(--board-size));
+    background: repeating-linear-gradient(0deg, #edf2f7, #edf2f7 calc(var(--cell-size) - 1px), #cbd5e1 calc(var(--cell-size) - 1px), #cbd5e1 var(--cell-size)),
+        repeating-linear-gradient(90deg, #edf2f7, #edf2f7 calc(var(--cell-size) - 1px), #cbd5e1 calc(var(--cell-size) - 1px), #cbd5e1 var(--cell-size));
+    background-size: var(--cell-size) var(--cell-size);
+    border-radius: 10px;
+    border: 4px solid #90a4ae;
+    overflow: hidden;
+}
+
+.board::after {
+    content: "Salida";
+    position: absolute;
+    top: calc(var(--cell-size) * 2);
+    right: -68px;
+    width: 60px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #546e7a;
+}
+
+.vehicle {
+    position: absolute;
+    border-radius: 8px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    transition: transform 0.2s ease-in-out;
+}
+
+.vehicle.goal {
+    background-color: var(--accent-color);
+}
+
+.control-group,
+.control-buttons,
+.metrics,
+.actions-log,
+.status {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-buttons {
+    flex-direction: row;
+    gap: 0.75rem;
+}
+
+label {
+    font-weight: 600;
+}
+
+select,
+button,
+input[type="range"],
+textarea {
+    font-family: inherit;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+}
+
+button {
+    cursor: pointer;
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    transition: background-color 0.2s ease-in-out;
+}
+
+button:disabled {
+    background-color: #90a4ae;
+    cursor: not-allowed;
+}
+
+button:not(:disabled):hover {
+    background-color: #1565c0;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 160px;
+}
+
+.metrics dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.35rem 1rem;
+    margin: 0;
+}
+
+.metrics dt {
+    font-weight: 600;
+}
+
+.metrics dd {
+    margin: 0;
+}
+
+.status {
+    min-height: 1.5rem;
+}
+
+@media (max-width: 920px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+
+    .board {
+        margin: 0 auto;
+    }
+}
+

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Traffic Jam Solver</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+</head>
+<body>
+    <header class="app-header">
+        <h1>Traffic Jam Solver</h1>
+        <p>Seleccione un tablero, el algoritmo y observe la solucion paso a paso.</p>
+    </header>
+    <main class="layout">
+        <section class="board-panel">
+            <div class="board-header">
+                <label for="puzzle-select">Tablero:</label>
+                <select id="puzzle-select" aria-label="Seleccionar tablero"></select>
+            </div>
+            <div id="board" class="board" role="grid" aria-label="Tablero de Traffic Jam"></div>
+            <div class="board-footer">
+                <button id="reset-board" type="button">Restablecer</button>
+            </div>
+        </section>
+        <section class="control-panel">
+            <div class="control-group">
+                <label for="algorithm-select">Algoritmo de busqueda</label>
+                <select id="algorithm-select" aria-label="Seleccionar algoritmo">
+                    <option value="bfs">Busqueda en anchura (BFS)</option>
+                    <option value="dfs">Busqueda en profundidad (DFS)</option>
+                    <option value="backtracking">Backtracking</option>
+                    <option value="astar">A*</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="animation-speed">Velocidad de animacion</label>
+                <input id="animation-speed" type="range" min="100" max="1500" step="100" value="600" />
+            </div>
+            <div class="control-buttons">
+                <button id="solve-button" type="button">Resolver</button>
+                <button id="stop-button" type="button" disabled>Detener</button>
+            </div>
+            <section class="metrics" aria-live="polite">
+                <h2>Metricas</h2>
+                <dl>
+                    <div><dt>Nodos explorados:</dt><dd id="metric-visited">0</dd></div>
+                    <div><dt>Nodos en frontera:</dt><dd id="metric-frontier">0</dd></div>
+                    <div><dt>Profundidad de solucion:</dt><dd id="metric-depth">0</dd></div>
+                    <div><dt>Tiempo (ms):</dt><dd id="metric-time">0</dd></div>
+                </dl>
+            </section>
+            <section class="actions-log">
+                <h2>Acciones</h2>
+                <textarea id="action-log" readonly aria-label="Secuencia de movimientos"></textarea>
+            </section>
+            <section class="status" aria-live="assertive">
+                <p id="status-message"></p>
+            </section>
+        </section>
+    </main>
+    <footer class="app-footer">
+        <small>Desarrollado para simulacion de algoritmos de busqueda en Traffic Jam.</small>
+    </footer>
+    <script type="module" src="scripts/main.js"></script>
+</body>
+</html>
+

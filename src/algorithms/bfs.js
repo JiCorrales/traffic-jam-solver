@@ -146,13 +146,23 @@ const isGoalState = (context, positions) => {
     }
 
     if (goalVehicle.orientation === 'horizontal') {
-        const tailCol = goalPosition.col + goalVehicle.length - 1;
-        return goalPosition.row === context.exit.row && tailCol === context.exit.col;
+        if (goalPosition.row !== context.exit.row) {
+            return false;
+        }
+
+        const frontCol = goalPosition.col;
+        const rearCol = goalPosition.col + goalVehicle.length - 1;
+        return context.exit.col >= frontCol && context.exit.col <= rearCol;
     }
 
     if (goalVehicle.orientation === 'vertical') {
-        const tailRow = goalPosition.row + goalVehicle.length - 1;
-        return goalPosition.col === context.exit.col && tailRow === context.exit.row;
+        if (goalPosition.col !== context.exit.col) {
+            return false;
+        }
+
+        const topRow = goalPosition.row;
+        const bottomRow = goalPosition.row + goalVehicle.length - 1;
+        return context.exit.row >= topRow && context.exit.row <= bottomRow;
     }
 
     return goalPosition.row === context.exit.row && goalPosition.col === context.exit.col;

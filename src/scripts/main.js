@@ -10,6 +10,8 @@ import {
 } from '../models/boardRenderer.js';
 import { solveWithBacktracking } from '../algorithms/backtracking.js';
 import { solveWithBfs } from '../algorithms/bfs.js';
+import { solveWithAStar } from '../algorithms/astar.js';
+import { solveWithDfs } from '../algorithms/dfs.js';
 
 /** @type {HTMLSelectElement|null} */
 const puzzleSelect = document.getElementById('puzzle-select');
@@ -374,6 +376,16 @@ const handleSolveClick = () => {
 
     if (algorithm === 'bfs') {
         runAlgorithm(solveWithBfs, { displayName: 'Busqueda en anchura (BFS)' });
+        return;
+    }
+
+    if (algorithm === 'dfs') {
+        runAlgorithm(solveWithDfs, { displayName: 'Busqueda en profundidad (DFS)' });
+        return;
+    }
+
+    if (algorithm === 'astar') {
+        runAlgorithm(solveWithAStar, { displayName: 'A*' });
         return;
     }
 

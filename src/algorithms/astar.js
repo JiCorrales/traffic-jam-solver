@@ -146,13 +146,23 @@ const isGoalState = (context, positions) => {
     }
 
     if (goalVehicle.orientation === 'horizontal') {
-        const tailCol = goalPosition.col + goalVehicle.length - 1;
-        return goalPosition.row === context.exit.row && tailCol === context.exit.col;
+        if (goalPosition.row !== context.exit.row) {
+            return false;
+        }
+
+        const frontCol = goalPosition.col;
+        const rearCol = goalPosition.col + goalVehicle.length - 1;
+        return context.exit.col >= frontCol && context.exit.col <= rearCol;
     }
 
     if (goalVehicle.orientation === 'vertical') {
-        const tailRow = goalPosition.row + goalVehicle.length - 1;
-        return goalPosition.col === context.exit.col && tailRow === context.exit.row;
+        if (goalPosition.col !== context.exit.col) {
+            return false;
+        }
+
+        const topRow = goalPosition.row;
+        const bottomRow = goalPosition.row + goalVehicle.length - 1;
+        return context.exit.row >= topRow && context.exit.row <= bottomRow;
     }
 
     return goalPosition.row === context.exit.row && goalPosition.col === context.exit.col;
@@ -279,55 +289,89 @@ const heuristic = (context, positions) => {
     const matrix = buildOccupancyMatrix(context, positions);
 
     if (goalVehicle.orientation === 'horizontal') {
-        const tailCol = goalPosition.col + goalVehicle.length - 1;
-        const direction = context.exit.col >= tailCol ? 1 : -1;
-        const targetCol = context.exit.col;
-        const distance = Math.max(0, direction === 1 ? targetCol - tailCol : tailCol - targetCol);
-        let blocking = 0;
+        const row = goalPosition.row;
+        const frontCol = goalPosition.col;
+        const rearCol = goalPosition.col + goalVehicle.length - 1;
 
-        for (
-            let col = tailCol + direction;
-            direction === 1
-                ? col <= targetCol && col < context.columns
-                : col >= targetCol && col >= 0;
-            col += direction
-        ) {
-            if (col < 0 || col >= context.columns) {
-                continue;
+        if (row !== context.exit.row) {
+            return (
+                Math.abs(context.exit.row - row) +
+                Math.abs(context.exit.col - frontCol)
+            );
+        }
+
+        if (context.exit.col >= frontCol && context.exit.col <= rearCol) {
+            return 0;
+        }
+
+        if (context.exit.col > rearCol) {
+            let blocking = 0;
+            for (
+                let col = rearCol + 1;
+                col <= context.exit.col && col < context.columns;
+                col += 1
+            ) {
+                if (matrix[row][col] !== -1) {
+                    blocking += 1;
+                }
             }
+            return context.exit.col - rearCol + blocking * 2;
+        }
 
-            if (matrix[goalPosition.row][col] !== -1) {
+        let blocking = 0;
+        for (
+            let col = frontCol - 1;
+            col >= context.exit.col && col >= 0;
+            col -= 1
+        ) {
+            if (matrix[row][col] !== -1) {
                 blocking += 1;
             }
         }
-
-        return distance + blocking * 2;
+        return frontCol - context.exit.col + blocking * 2;
     }
 
     if (goalVehicle.orientation === 'vertical') {
-        const tailRow = goalPosition.row + goalVehicle.length - 1;
-        const direction = context.exit.row >= tailRow ? 1 : -1;
-        const targetRow = context.exit.row;
-        const distance = Math.max(0, direction === 1 ? targetRow - tailRow : tailRow - targetRow);
-        let blocking = 0;
+        const col = goalPosition.col;
+        const topRow = goalPosition.row;
+        const bottomRow = goalPosition.row + goalVehicle.length - 1;
 
-        for (
-            let row = tailRow + direction;
-            direction === 1
-                ? row <= targetRow && row < context.rows
-                : row >= targetRow && row >= 0;
-            row += direction
-        ) {
-            if (row < 0 || row >= context.rows) {
-                continue;
+        if (col !== context.exit.col) {
+            return (
+                Math.abs(context.exit.col - col) +
+                Math.abs(context.exit.row - topRow)
+            );
+        }
+
+        if (context.exit.row >= topRow && context.exit.row <= bottomRow) {
+            return 0;
+        }
+
+        if (context.exit.row > bottomRow) {
+            let blocking = 0;
+            for (
+                let row = bottomRow + 1;
+                row <= context.exit.row && row < context.rows;
+                row += 1
+            ) {
+                if (matrix[row][col] !== -1) {
+                    blocking += 1;
+                }
             }
+            return context.exit.row - bottomRow + blocking * 2;
+        }
 
-            if (matrix[row][goalPosition.col] !== -1) {
+        let blocking = 0;
+        for (
+            let row = topRow - 1;
+            row >= context.exit.row && row >= 0;
+            row -= 1
+        ) {
+            if (matrix[row][col] !== -1) {
                 blocking += 1;
             }
         }
-
-        return distance + blocking * 2;
+        return topRow - context.exit.row + blocking * 2;
     }
 
     return (

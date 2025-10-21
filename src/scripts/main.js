@@ -9,6 +9,7 @@ import {
     clearBoard,
 } from '../models/boardRenderer.js';
 import { solveWithBacktracking } from '../algorithms/backtracking.js';
+import { solveWithBfs } from '../algorithms/bfs.js';
 
 /** @type {HTMLSelectElement|null} */
 const puzzleSelect = document.getElementById('puzzle-select');
@@ -288,7 +289,7 @@ const initializePuzzles = async () => {
     }
 };
 
-const runBacktracking = async () => {
+const runAlgorithm = async (solver, { displayName }) => {
     if (!currentBoard) {
         setStatus('Debe seleccionar un puzzle antes de resolver.', { isError: true });
         return;
@@ -310,10 +311,10 @@ const runBacktracking = async () => {
     algorithmSelect && (algorithmSelect.disabled = true);
     speedSlider && (speedSlider.disabled = true);
 
-    setStatus('Ejecutando Backtracking...');
+    setStatus(`Ejecutando ${displayName}...`);
 
     try {
-        const result = await solveWithBacktracking(currentBoard, {
+        const result = await solver(currentBoard, {
             signal: runState.abortController.signal,
             onProgress: updateMetrics,
         });
@@ -330,7 +331,7 @@ const runBacktracking = async () => {
         }
 
         if (result.status === 'unsolved') {
-            setStatus('No se encontro solucion con Backtracking.', { isError: true });
+            setStatus(`No se encontro solucion con ${displayName}.`, { isError: true });
             return;
         }
 
@@ -344,8 +345,8 @@ const runBacktracking = async () => {
             return;
         }
 
-        console.error('Error durante la ejecucion del algoritmo:', error);
-        setStatus('Ocurrio un error al ejecutar Backtracking.', { isError: true });
+        console.error(`Error durante la ejecucion de ${displayName}:`, error);
+        setStatus(`Ocurrio un error al ejecutar ${displayName}.`, { isError: true });
     } finally {
         runState.running = false;
         runState.abortController = null;
@@ -366,14 +367,17 @@ const handleSolveClick = () => {
 
     const algorithm = algorithmSelect.value;
 
-    if (algorithm !== 'backtracking') {
-        setStatus('Este algoritmo aun no esta implementado. Seleccione Backtracking.', {
-            isError: true,
-        });
+    if (algorithm === 'backtracking') {
+        runAlgorithm(solveWithBacktracking, { displayName: 'Backtracking' });
         return;
     }
 
-    runBacktracking();
+    if (algorithm === 'bfs') {
+        runAlgorithm(solveWithBfs, { displayName: 'Busqueda en anchura (BFS)' });
+        return;
+    }
+
+    setStatus('Este algoritmo aun no esta implementado.', { isError: true });
 };
 
 const handleStopClick = () => {

@@ -278,6 +278,10 @@ class PriorityQueue {
     }
 }
 
+/**
+ * Estima el costo restante para A* midiendo distancia del carro objetivo
+ * hasta la salida y penalizando vehículos bloqueando ese camino.
+ */
 const heuristic = (context, positions) => {
     const goalVehicle = context.vehicles[context.goalIndex];
     const goalPosition = positions[context.goalIndex];
@@ -380,6 +384,22 @@ const heuristic = (context, positions) => {
     );
 };
 
+/**
+ * Resuelve el tablero mediante A*, priorizando estados con menor g + h.
+ *
+ * @param {import('../models/boardRenderer.js').ParsedBoard} boardData
+ * @param {Object} [options]
+ * @param {AbortSignal} [options.signal]
+ * @param {(metrics: { explored:number, frontier:number, depth:number, timeMs:number }) => void} [options.onProgress]
+ * @returns {Promise<{
+ *   status: 'solved' | 'unsolved' | 'aborted',
+ *   moves: Array<{ vehicleIndex:number, direction:keyof typeof DIRECTION_OFFSETS, steps:number }>,
+ *   stateHistory: Array<Array<{ row:number, col:number }>>,
+ *   actions: string[],
+ *   metrics: { explored:number, frontier:number, depth:number, timeMs:number },
+ *   vehicleLabels: string[],
+ * }>}
+ */
 const solveWithAStar = async (boardData, options = {}) => {
     const context = createContext(boardData);
     const initialPositions = context.vehicles.map((vehicle) => vehicle.initialPosition);

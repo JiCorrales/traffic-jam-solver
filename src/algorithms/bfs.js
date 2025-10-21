@@ -206,6 +206,23 @@ const reconstructPath = (nodes, solutionIndex) => {
     return path.reverse();
 };
 
+/**
+ * Resuelve el tablero usando búsqueda en anchura (nivel por nivel).
+ *
+ * @param {import('../models/boardRenderer.js').ParsedBoard} boardData
+ * @param {Object} [options]
+ * @param {AbortSignal} [options.signal] Abortar antes o durante la búsqueda.
+ * @param {(metrics: { explored:number, frontier:number, depth:number, timeMs:number }) => void} [options.onProgress]
+ *        Callback opcional invocado periódicamente con métricas.
+ * @returns {Promise<{
+ *   status: 'solved' | 'unsolved' | 'aborted',
+ *   moves: Array<{ vehicleIndex:number, direction:keyof typeof DIRECTION_OFFSETS, steps:number }>,
+ *   stateHistory: Array<Array<{ row:number, col:number }>>,
+ *   actions: string[],
+ *   metrics: { explored:number, frontier:number, depth:number, timeMs:number },
+ *   vehicleLabels: string[],
+ * }>}
+ */
 const solveWithBfs = async (boardData, options = {}) => {
     const context = createContext(boardData);
     const initialPositions = context.vehicles.map((vehicle) => vehicle.initialPosition);

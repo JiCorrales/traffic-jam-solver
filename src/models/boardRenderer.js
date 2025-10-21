@@ -188,6 +188,26 @@ const buildVehicles = (grid) => {
     return assignVehicleColors(vehicles);
 };
 
+/**
+ * Convierte la representación textual de un puzzle en una estructura utilizable
+ * por los algoritmos (grid, vehículos y coordenadas de salida).
+ *
+ * @param {string} puzzleText
+ * @returns {{
+ *   grid: string[][],
+ *   rows: number,
+ *   columns: number,
+ *   exit: { row:number, col:number },
++  vehicles: Array<{
+ *     orientation: 'horizontal' | 'vertical' | 'single',
+ *     cells: Array<{ row:number, col:number, token:string }>,
+ *     length: number,
+ *     isGoal: boolean,
+ *     color: string,
+ *     name: string,
+ *   }>
+ * }}
+ */
 const parsePuzzle = (puzzleText) => {
     const rawLines = puzzleText
         .split(/\r?\n/)

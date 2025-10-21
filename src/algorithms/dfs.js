@@ -219,6 +219,24 @@ const describeMove = (vehicle, move) => {
  *     vehicleLabels: string[],
  * }>}
  */
+/**
+ * Explora el espacio de estados usando una pila (DFS).
+ * Útil para comparar con backtracking aplicando un límite de profundidad opcional.
+ *
+ * @param {import('../models/boardRenderer.js').ParsedBoard} boardData
+ * @param {Object} [options]
+ * @param {AbortSignal} [options.signal]
+ * @param {(metrics: { explored:number, frontier:number, depth:number, timeMs:number }) => void} [options.onProgress]
+ * @param {number} [options.maxDepth] Profundidad máxima antes de cortar la rama (∞ por defecto).
+ * @returns {Promise<{
+ *   status: 'solved' | 'unsolved' | 'aborted',
+ *   moves: Array<{ vehicleIndex:number, direction:keyof typeof DIRECTION_OFFSETS, steps:number }>,
+ *   stateHistory: Array<Array<{ row:number, col:number }>>,
+ *   actions: string[],
+ *   metrics: { explored:number, frontier:number, depth:number, timeMs:number },
+ *   vehicleLabels: string[],
+ * }>}
+ */
 const solveWithDfs = async (boardData, options = {}) => {
     const context = createContext(boardData);
     const initialPositions = context.vehicles.map((vehicle) => vehicle.initialPosition);

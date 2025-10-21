@@ -1,3 +1,7 @@
+/**
+ * Módulo principal de la UI: carga puzzles, administra el formulario de control
+ * y coordina la ejecución/animación de los distintos algoritmos de búsqueda.
+ */
 import {
     discoverPuzzles,
     fetchPuzzle,
@@ -60,6 +64,10 @@ const parsedBoards = new Map();
 let currentBoard = null;
 let currentPuzzleId = null;
 
+/**
+ * Estado mutable que evita tener múltiples ejecuciones simultáneas y permite
+ * detener la animación cuando el usuario pulsa "Detener".
+ */
 const runState = {
     running: false,
     abortController: null,
@@ -291,6 +299,12 @@ const initializePuzzles = async () => {
     }
 };
 
+/**
+ * Deshabilita los controles, lanza un algoritmo y renderiza resultado + métricas.
+ *
+ * @param {(board: import('../models/boardRenderer.js').ParsedBoard, options?:object) => Promise<any>} solver
+ * @param {{ displayName: string }} param1
+ */
 const runAlgorithm = async (solver, { displayName }) => {
     if (!currentBoard) {
         setStatus('Debe seleccionar un puzzle antes de resolver.', { isError: true });

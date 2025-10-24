@@ -36,13 +36,18 @@ const buildPuzzlePath = (puzzleId) =>
  * @property {string} content - Contenido textual del puzzle.
  */
 
+
 /**
- * Carga un puzzle del directorio configurado y lo almacena en cache.
- *
- * @async
- * @param {number|string} puzzleId - Identificador del puzzle (sin prefijo ni extension).
- * @returns {Promise<PuzzleData>} Objeto con los datos basicos del puzzle.
- * @throws {PuzzleNotFoundError} Si el recurso no esta disponible.
+ * The function `fetchPuzzle` asynchronously fetches puzzle data based on a given puzzle ID, caching
+ * the data if available.
+ * @param puzzleId - The `puzzleId` parameter is the unique identifier of the puzzle that you want to
+ * fetch. It is used to determine which puzzle to retrieve from the cache or fetch from the server if
+ * it's not already cached.
+ * @returns The `fetchPuzzle` function returns a Promise that resolves to the puzzle data object
+ * fetched from the server or retrieved from the cache. If the puzzle with the specified `puzzleId` is
+ * found in the cache, it is returned directly from the cache. Otherwise, a network request is made to
+ * fetch the puzzle data, and upon successful retrieval, the data is stored in the cache before being
+ * returned
  */
 async function fetchPuzzle(puzzleId) {
     if (puzzleCache.has(puzzleId)) {
@@ -68,15 +73,12 @@ async function fetchPuzzle(puzzleId) {
     return puzzleData;
 }
 
+
 /**
- * Descubre puzzles siguiendo la nomenclatura Puzzle1, Puzzle2, ...
- *
- * @async
- * @param {Object} [options={}] - Configuracion de la busqueda.
- * @param {number} [options.start=1] - Numero inicial desde el que se intentara cargar.
- * @param {number} [options.max=DEFAULT_MAX_PUZZLES] - Numero maximo de intentos.
- * @param {boolean} [options.stopOnFirstGap=true] - Detenerse ante el primer faltante.
- * @returns {Promise<PuzzleData[]>} Lista de puzzles cargados exitosamente.
+ * The `discoverPuzzles` function asynchronously fetches puzzles starting from a specified index, with
+ * an option to stop on the first gap or after a certain number of consecutive misses.
+ * @param [] - 1. `start`: The starting index for discovering puzzles. Defaults to 1 if not provided.
+ * @returns The `discoverPuzzles` function returns an array of discovered puzzles.
  */
 async function discoverPuzzles({
     start = 1,
@@ -107,8 +109,9 @@ async function discoverPuzzles({
 }
 
 /**
- * Limpia la cache interna de puzzles.
+ * The function `clearPuzzleCache` clears the cache used for storing puzzle data.
  */
+
 function clearPuzzleCache() {
     puzzleCache.clear();
 }

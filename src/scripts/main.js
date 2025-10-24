@@ -58,6 +58,8 @@ const loadedPuzzles = new Map();
 
 const parsedBoards = new Map();
 
+const toPuzzleKey = (id) => String(id);
+
 let currentBoard = null;
 let currentPuzzleId = null;
 
@@ -208,27 +210,29 @@ const handlePuzzleSelection = async (event) => {
         return;
     }
 
+    const puzzleKey = toPuzzleKey(selectedRaw);
+
     stopCurrentRun();
     clearMetrics();
     clearActions();
 
     try {
-        let puzzle = loadedPuzzles.get(selectedRaw);
+        let puzzle = loadedPuzzles.get(puzzleKey);
 
         if (!puzzle) {
             const maybeNumber = Number.parseInt(selectedRaw, 10);
             if (!Number.isNaN(maybeNumber)) {
                 puzzle = await fetchPuzzle(maybeNumber);
-                loadedPuzzles.set(maybeNumber, puzzle);
+                loadedPuzzles.set(puzzleKey, puzzle);
             } else {
                 setStatus('El puzzle seleccionado no esta disponible.', { isError: true });
                 return;
             }
         }
 
-        const boardData = parseAndRenderPuzzle(selectedRaw, puzzle);
+        const boardData = parseAndRenderPuzzle(puzzleKey, puzzle);
         currentBoard = boardData;
-        currentPuzzleId = selectedRaw;
+        currentPuzzleId = puzzleKey;
 
         if (!boardData) {
             setStatus('No fue posible renderizar el puzzle seleccionado.', {
@@ -282,15 +286,16 @@ const initializePuzzles = async () => {
 
         puzzleSelect.innerHTML = '';
         puzzles.forEach((puzzle) => {
-            loadedPuzzles.set(puzzle.id, puzzle);
+            const key = toPuzzleKey(puzzle.id);
+            loadedPuzzles.set(key, puzzle);
             const option = document.createElement('option');
-            option.value = String(puzzle.id);
+            option.value = key;
             option.textContent = puzzle.name;
             puzzleSelect.appendChild(option);
         });
 
         puzzleSelect.disabled = false;
-        puzzleSelect.value = String(puzzles[0].id);
+        puzzleSelect.value = toPuzzleKey(puzzles[0].id);
 
         const initialEvent = new Event('change');
         puzzleSelect.dispatchEvent(initialEvent);
@@ -427,7 +432,10 @@ const handleResetClick = () => {
     stopCurrentRun();
     clearActions();
     clearMetrics();
-    parseAndRenderPuzzle(currentPuzzleId, puzzle);
+    const boardData = parseAndRenderPuzzle(currentPuzzleId, puzzle);
+    if (boardData) {
+        currentBoard = boardData;
+    }
     setStatus('Tablero restablecido.');
 };
 
@@ -484,15 +492,16 @@ const closeImportModalFn = () => {
 
 const addImportedPuzzle = (name, content) => {
     const id = `upload:${Date.now()}`;
+    const key = toPuzzleKey(id);
     const puzzle = { id, name, path: '(local)', content: content.trimEnd() };
-    loadedPuzzles.set(id, puzzle);
+    loadedPuzzles.set(key, puzzle);
 
     if (puzzleSelect) {
         const option = document.createElement('option');
-        option.value = String(id);
+        option.value = key;
         option.textContent = name;
         puzzleSelect.appendChild(option);
-        puzzleSelect.value = String(id);
+        puzzleSelect.value = key;
         const evt = new Event('change');
         puzzleSelect.dispatchEvent(evt);
     }

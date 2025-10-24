@@ -1,3 +1,50 @@
+/**
+ * @typedef {Object} Position
+ * @property {number} row - Zero-based row index on the board.
+ * @property {number} col - Zero-based column index on the board.
+ */
+
+/**
+ * @typedef {'horizontal' | 'vertical' | 'single'} Orientation
+ */
+
+/**
+ * @typedef {Object} Vehicle
+ * @property {Orientation} orientation - Movement orientation of the vehicle.
+ * @property {number} length - Number of consecutive cells occupied by the vehicle.
+ * @property {boolean} isGoal - Whether this is the goal vehicle.
+ * @property {string} label - Human-readable label for logs/UI.
+ * @property {Position} initialPosition - Anchor (top-most/left-most) position of the vehicle.
+ */
+
+/**
+ * @typedef {'left' | 'right' | 'up' | 'down'} Direction
+ */
+
+/**
+ * @typedef {Object} Move
+ * @property {number} vehicleIndex - Index of the vehicle in the context's vehicle array.
+ * @property {Direction} direction - Direction of the move.
+ * @property {number} steps - Number of grid cells to move (>= 1).
+ */
+
+/**
+ * @typedef {Object} Context
+ * @property {number} rows - Total number of rows in the board.
+ * @property {number} columns - Total number of columns in the board.
+ * @property {Position} exit - Exit cell position that solves the puzzle.
+ * @property {Vehicle[]} vehicles - All vehicles on the board.
+ * @property {number} goalIndex - Index of the goal vehicle in {@link Context.vehicles}.
+ */
+
+/**
+ * @typedef {Object} Metrics
+ * @property {number} explored - Total number of explored nodes (states).
+ * @property {number} frontier - Current frontier size (queue length).
+ * @property {number} depth - Depth of the found solution (or 0 if none).
+ * @property {number} timeMs - Elapsed time in milliseconds.
+ */
+
 /*  `DIRECTION_OFFSETS` stores directional offsets for left, right, up, and down movements. 
 Each direction is represented as a key in the object, with corresponding row and column offsets 
 specified as values. This object can be used in a game or application to determine how an object
@@ -37,17 +84,12 @@ const clonePositions = (positions) =>
     positions.map((position) => ({ row: position.row, col: position.col }));
 
 /**
- * The `createContext` function processes board data to create a context object for a breadth-first
- * search algorithm.
- * @param boardData - The `boardData` parameter is an object that contains information about the game
- * board and its vehicles. It should have the following properties:
- * @returns The `createContext` function returns an object with the following properties:
- * - `rows`: Number of rows in the board
- * - `columns`: Number of columns in the board
- * - `exit`: Exit position on the board
- * - `vehicles`: Array of objects representing vehicles on the board, each with properties:
- *   - `orientation`: Orientation of the vehicle
- *   - `length`: Length of
+ * Builds a solver context from parsed board data.
+ * Validates input, labels vehicles, and locates the goal vehicle index.
+ *
+ * @param {import('../models/boardRenderer.js').ParsedBoard} boardData - Parsed board input.
+ * @throws {Error} If board data is invalid or the goal vehicle is missing.
+ * @returns {Context} Prepared, immutable solving context.
  */
 const createContext = (boardData) => {
     if (!boardData || !Array.isArray(boardData.vehicles)) {
@@ -89,18 +131,11 @@ const createContext = (boardData) => {
 };
 
 /**
- * The function `buildOccupancyMatrix` creates a matrix representing the occupancy of vehicles in a
- * grid based on their positions and orientations.
- * @param context - The `context` parameter in the `buildOccupancyMatrix` function represents the
- * context in which the vehicles are placed on a grid. It contains information about the grid
- * dimensions (rows and columns) and the vehicles present in the context.
- * @param positions - The `positions` parameter in the `buildOccupancyMatrix` function is an array that
- * contains the positions of each vehicle on the game board. Each element in the `positions` array
- * corresponds to a vehicle and contains the row and column coordinates where the vehicle is located on
- * the board. The function uses
- * @returns The function `buildOccupancyMatrix` returns a matrix representing the occupancy of vehicles
- * in a given context based on their positions. Each cell in the matrix contains the index of the
- * vehicle occupying that position, or -1 if the cell is empty.
+ * Builds an occupancy matrix for the current state.
+ *
+ * @param {Context} context - The solving context.
+ * @param {Position[]} positions - Current anchor positions of all vehicles.
+ * @returns {number[][]} Matrix of size rows×columns, -1 is empty, otherwise vehicle index.
  */
 const buildOccupancyMatrix = (context, positions) => {
     const matrix = Array.from({ length: context.rows }, () =>
@@ -123,19 +158,12 @@ const buildOccupancyMatrix = (context, positions) => {
 };
 
 /**
- * The function `generateMoves` calculates possible moves for vehicles on a game board based on their
- * positions and orientations.
- * @param context - The `context` parameter in the `generateMoves` function likely contains information
- * about the game board or grid where the vehicles are positioned. It may include details such as the
- * number of rows and columns in the grid, as well as other relevant information needed to determine
- * valid moves for the vehicles.
- * @param positions - It seems like you were about to provide some information about the `positions`
- * parameter in the `generateMoves` function. Could you please provide more details or complete the
- * sentence so that I can assist you further?
- * @returns The `generateMoves` function returns an array of move objects. Each move object contains
- * information about a possible move for a vehicle on the game board. The move object includes the
- * index of the vehicle, the direction of the move (left, right, up, down), and the number of steps for
- * the move.
+ * Generates all legal moves from a given state.
+ * The result is NOT deduplicated and does not consider visited sets.
+ *
+ * @param {Context} context - The solving context.
+ * @param {Position[]} positions - Current anchor positions of all vehicles.
+ * @returns {Move[]} A list of candidate moves for exploration.
  */
 const generateMoves = (context, positions) => {
     const moves = [];

@@ -1,7 +1,7 @@
-/**
- * Módulo principal de la UI: carga puzzles, administra el formulario de control
- * y coordina la ejecución/animación de los distintos algoritmos de búsqueda.
- */
+/* The above code is a JavaScript module that serves as the main module for a UI application. It
+handles loading puzzles, managing the control form, and coordinating the execution/animation of
+different search algorithms. */
+
 import {
     discoverPuzzles,
     fetchPuzzle,
@@ -17,31 +17,27 @@ import { solveWithBfs } from '../algorithms/bfs.js';
 import { solveWithAStar } from '../algorithms/astar.js';
 import { solveWithDfs } from '../algorithms/dfs.js';
 
-/** @type {HTMLSelectElement|null} */
+
+/* The above code is selecting an HTML element with the id 'puzzle-select' using JavaScript. */
 const puzzleSelect = document.getElementById('puzzle-select');
 
-/** @type {HTMLSelectElement|null} */
+
 const algorithmSelect = document.getElementById('algorithm-select');
 
-/** @type {HTMLInputElement|null} */
 const speedSlider = document.getElementById('animation-speed');
 
-/** @type {HTMLButtonElement|null} */
 const solveButton = document.getElementById('solve-button');
 
-/** @type {HTMLButtonElement|null} */
+
 const stopButton = document.getElementById('stop-button');
 
-/** @type {HTMLButtonElement|null} */
 const resetButton = document.getElementById('reset-board');
 
-/** @type {HTMLElement|null} */
+
 const statusMessage = document.getElementById('status-message');
 
-/** @type {HTMLElement|null} */
 const boardElement = document.getElementById('board');
 
-/** @type {HTMLTextAreaElement|null} */
 const actionLog = document.getElementById('action-log');
 
 const metricVisited = document.getElementById('metric-visited');
@@ -49,25 +45,23 @@ const metricFrontier = document.getElementById('metric-frontier');
 const metricDepth = document.getElementById('metric-depth');
 const metricTime = document.getElementById('metric-time');
 
-/**
- * Cache local de puzzles ya cargados.
- * @type {Map<number, import('./puzzleLoader.js').PuzzleData>}
- */
+const importButton = document.getElementById('import-puzzle-button');
+const importModal = document.getElementById('import-modal');
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const closeImportModal = document.getElementById('close-import-modal');
+const browseFileButton = document.getElementById('browse-file-button');
+
+
 const loadedPuzzles = new Map();
 
-/**
- * Cache de tableros parseados listos para renderizar.
- * @type {Map<number, import('../models/boardRenderer.js').ParsedBoard>}
- */
+
 const parsedBoards = new Map();
 
 let currentBoard = null;
 let currentPuzzleId = null;
 
-/**
- * Estado mutable que evita tener múltiples ejecuciones simultáneas y permite
- * detener la animación cuando el usuario pulsa "Detener".
- */
+
 const runState = {
     running: false,
     abortController: null,
@@ -208,9 +202,9 @@ const parseAndRenderPuzzle = (puzzleId, puzzle) => {
 };
 
 const handlePuzzleSelection = async (event) => {
-    const selectedId = Number.parseInt(event.target.value, 10);
+    const selectedRaw = event.target.value;
 
-    if (Number.isNaN(selectedId)) {
+    if (!selectedRaw) {
         return;
     }
 
@@ -219,12 +213,22 @@ const handlePuzzleSelection = async (event) => {
     clearActions();
 
     try {
-        const puzzle = await fetchPuzzle(selectedId);
-        loadedPuzzles.set(selectedId, puzzle);
+        let puzzle = loadedPuzzles.get(selectedRaw);
 
-        const boardData = parseAndRenderPuzzle(selectedId, puzzle);
+        if (!puzzle) {
+            const maybeNumber = Number.parseInt(selectedRaw, 10);
+            if (!Number.isNaN(maybeNumber)) {
+                puzzle = await fetchPuzzle(maybeNumber);
+                loadedPuzzles.set(maybeNumber, puzzle);
+            } else {
+                setStatus('El puzzle seleccionado no esta disponible.', { isError: true });
+                return;
+            }
+        }
+
+        const boardData = parseAndRenderPuzzle(selectedRaw, puzzle);
         currentBoard = boardData;
-        currentPuzzleId = selectedId;
+        currentPuzzleId = selectedRaw;
 
         if (!boardData) {
             setStatus('No fue posible renderizar el puzzle seleccionado.', {
@@ -432,5 +436,80 @@ document.addEventListener('DOMContentLoaded', () => {
     solveButton?.addEventListener('click', handleSolveClick);
     stopButton?.addEventListener('click', handleStopClick);
     resetButton?.addEventListener('click', handleResetClick);
+
+    // Importación: abrir/cerrar modal
+    importButton?.addEventListener('click', openImportModal);
+    closeImportModal?.addEventListener('click', closeImportModalFn);
+
+    // Drag & drop en zona
+    dropZone?.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    dropZone?.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    dropZone?.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+    dropZone?.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const file = e.dataTransfer?.files?.[0] || null;
+        processFile(file);
+    });
+
+    // Selector de archivo por botón
+    browseFileButton?.addEventListener('click', () => {
+        fileInput?.click();
+    });
+
+    // Selector de archivo nativo
+    fileInput?.addEventListener('change', () => {
+        const file = fileInput.files?.[0] || null;
+        processFile(file);
+    });
+
     initializePuzzles();
 });
+
+const openImportModal = () => {
+    importModal?.removeAttribute('hidden');
+};
+
+const closeImportModalFn = () => {
+    importModal?.setAttribute('hidden', '');
+};
+
+const addImportedPuzzle = (name, content) => {
+    const id = `upload:${Date.now()}`;
+    const puzzle = { id, name, path: '(local)', content: content.trimEnd() };
+    loadedPuzzles.set(id, puzzle);
+
+    if (puzzleSelect) {
+        const option = document.createElement('option');
+        option.value = String(id);
+        option.textContent = name;
+        puzzleSelect.appendChild(option);
+        puzzleSelect.value = String(id);
+        const evt = new Event('change');
+        puzzleSelect.dispatchEvent(evt);
+    }
+};
+
+const processFile = async (file) => {
+    if (!file) return;
+    try {
+        const text = await file.text();
+        // Validar formato
+        parsePuzzle(text);
+        const name = file.name.replace(/\.[^/.]+$/, '');
+        addImportedPuzzle(name || 'Puzzle importado', text);
+        closeImportModalFn();
+        setStatus('Puzzle importado correctamente.');
+    } catch (err) {
+        console.error('Archivo de puzzle invalido:', err);
+        setStatus('El archivo no tiene el formato esperado.', { isError: true });
+    }
+};

@@ -1,3 +1,55 @@
+/**
+ * @typedef {Object} Position
+ * @property {number} row - Zero-based row index on the board.
+ * @property {number} col - Zero-based column index on the board.
+ */
+
+/**
+ * @typedef {'horizontal' | 'vertical' | 'single'} Orientation
+ */
+
+/**
+ * @typedef {Object} Vehicle
+ * @property {Orientation} orientation - Movement orientation of the vehicle.
+ * @property {number} length - Number of contiguous cells occupied by the vehicle.
+ * @property {boolean} isGoal - Whether this is the goal vehicle.
+ * @property {string} label - Human-readable label for logs and UI.
+ * @property {Position} initialPosition - Anchor (top-most/left-most) position of the vehicle.
+ */
+
+/**
+ * @typedef {'left' | 'right' | 'up' | 'down'} Direction
+ */
+
+/**
+ * @typedef {Object} Move
+ * @property {number} vehicleIndex - Index of the vehicle in the context's vehicle list.
+ * @property {Direction} direction - Direction of the movement.
+ * @property {number} steps - Number of grid cells to move (>= 1).
+ */
+
+/**
+ * @typedef {Object} Context
+ * @property {number} rows - Total number of rows in the board.
+ * @property {number} columns - Total number of columns in the board.
+ * @property {Position} exit - Exit cell position that solves the puzzle.
+ * @property {Vehicle[]} vehicles - All vehicles on the board.
+ * @property {number} goalIndex - Index of the goal vehicle in {@link Context.vehicles}.
+ */
+
+/**
+ * @typedef {Object} Metrics
+ * @property {number} explored - Total number of nodes (states) explored so far.
+ * @property {number} frontier - Current frontier size (stack length for DFS).
+ * @property {number} depth - Depth of the found solution (or 0 if none).
+ * @property {number} timeMs - Elapsed time in milliseconds.
+ */
+
+/**
+ * Offsets per direction expressed as row/col deltas.
+ * @constant
+ * @type {Record<Direction, {row:number, col:number}>}
+ */
 const DIRECTION_OFFSETS = {
     left: { row: 0, col: -1 },
     right: { row: 0, col: 1 },
@@ -5,6 +57,11 @@ const DIRECTION_OFFSETS = {
     down: { row: 1, col: 0 },
 };
 
+/**
+ * Human-friendly direction descriptions (Spanish, UI-facing).
+ * @constant
+ * @type {Record<Direction, string>}
+ */
 const DIRECTION_DESCRIPTIONS = {
     left: 'hacia la izquierda',
     right: 'hacia la derecha',
@@ -12,13 +69,35 @@ const DIRECTION_DESCRIPTIONS = {
     down: 'hacia abajo',
 };
 
+/**
+ * Node-exploration interval (in ms) to report progress via callbacks.
+ * @constant
+ * @type {number}
+ */
 const PROGRESS_INTERVAL = 150;
 
+/**
+ * High-resolution timestamp provider (falls back to Date.now in non-browser envs).
+ * @returns {number} Current time in milliseconds.
+ */
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
+/**
+ * Creates a deep copy of an array of positions.
+ * @param {Position[]} positions - Positions to clone.
+ * @returns {Position[]} New array with cloned position objects.
+ */
 const clonePositions = (positions) =>
     positions.map((position) => ({ row: position.row, col: position.col }));
 
+/**
+ * Builds a solver context from parsed board data.
+ * Validates the board, labels vehicles, and locates the goal vehicle index.
+ *
+ * @param {import('../models/boardRenderer.js').ParsedBoard} boardData - Parsed board input.
+ * @throws {Error} If board data is invalid or the goal vehicle is missing.
+ * @returns {Context} The prepared, immutable solving context.
+ */
 const createContext = (boardData) => {
     if (!boardData || !Array.isArray(boardData.vehicles)) {
         throw new Error('Los datos del tablero no son validos para DFS.');
@@ -58,6 +137,13 @@ const createContext = (boardData) => {
     };
 };
 
+/**
+ * Builds an occupancy matrix for the current state.
+ *
+ * @param {Context} context - The solving context.
+ * @param {Position[]} positions - Current anchor positions of all vehicles.
+ * @returns {number[][]} Matrix of size rows×columns where -1 means empty and any non-negative value is a vehicle index.
+ */
 const buildOccupancyMatrix = (context, positions) => {
     const matrix = Array.from({ length: context.rows }, () =>
         Array.from({ length: context.columns }, () => -1),
@@ -78,6 +164,14 @@ const buildOccupancyMatrix = (context, positions) => {
     return matrix;
 };
 
+/**
+ * Generates all legal moves from a given state.
+ * The result is NOT deduplicated and does not consider visited sets.
+ *
+ * @param {Context} context - The solving context.
+ * @param {Position[]} positions - Current anchor positions of all vehicles.
+ * @returns {Move[]} A list of candidate moves for DFS expansion.
+ */
 const generateMoves = (context, positions) => {
     const moves = [];
     const matrix = buildOccupancyMatrix(context, positions);
@@ -119,6 +213,13 @@ const generateMoves = (context, positions) => {
     return moves;
 };
 
+/**
+ * Applies a move to a positions array, returning a new positions array (immutable).
+ *
+ * @param {Position[]} positions - Current positions.
+ * @param {Move} move - Move to apply.
+ * @returns {Position[]} New positions after applying the move.
+ */
 const applyMove = (positions, move) => {
     const delta = DIRECTION_OFFSETS[move.direction];
 
@@ -134,9 +235,22 @@ const applyMove = (positions, move) => {
     });
 };
 
+/**
+ * Creates a unique, order-dependent string key for a positions array.
+ *
+ * @param {Position[]} positions - Positions to encode.
+ * @returns {string} Canonical state key (e.g., "r,c|r,c|...").
+ */
 const stateKey = (positions) =>
     positions.map((position) => `${position.row},${position.col}`).join('|');
 
+/**
+ * Checks whether the current state is a goal state (goal vehicle overlaps the exit).
+ *
+ * @param {Context} context - The solving context.
+ * @param {Position[]} positions - Current vehicle positions.
+ * @returns {boolean} True if the goal condition is satisfied.
+ */
 const isGoalState = (context, positions) => {
     const goalVehicle = context.vehicles[context.goalIndex];
     const goalPosition = positions[context.goalIndex];
@@ -168,6 +282,13 @@ const isGoalState = (context, positions) => {
     return goalPosition.row === context.exit.row && goalPosition.col === context.exit.col;
 };
 
+/**
+ * Reconstructs the sequence of states from an initial position and a list of moves.
+ *
+ * @param {Position[]} initialPositions - Starting positions (will not be mutated).
+ * @param {Move[]} moves - Moves to apply in order.
+ * @returns {Position[][]} Array of states, including the initial state at index 0.
+ */
 const buildStateHistory = (initialPositions, moves) => {
     const history = [clonePositions(initialPositions)];
     let current = clonePositions(initialPositions);
@@ -180,6 +301,13 @@ const buildStateHistory = (initialPositions, moves) => {
     return history;
 };
 
+/**
+ * Produces a human-readable description for a move (Spanish UI string).
+ *
+ * @param {Vehicle} vehicle - The vehicle being moved.
+ * @param {Move} move - The move to describe.
+ * @returns {string} A readable action like "mover carro 2 hacia la izquierda 2 espacios".
+ */
 const describeMove = (vehicle, move) => {
     const directionText = DIRECTION_DESCRIPTIONS[move.direction] ?? move.direction;
 
@@ -192,50 +320,22 @@ const describeMove = (vehicle, move) => {
 };
 
 /**
- * Ejecuta una busqueda en profundidad para encontrar una solucion al puzzle.
+ * Depth-First Search solver for the sliding-block/Rush Hour-like board.
+ * Uses a LIFO stack (explicit DFS), optional max depth cut-off, and progress callbacks.
  *
- * @param {import('../models/boardRenderer.js').ParsedBoard} boardData
- * @param {{
- *     signal?: AbortSignal,
- *     onProgress?: (metrics: {
- *         explored: number,
- *         frontier: number,
- *         depth: number,
- *         timeMs: number,
- *     }) => void,
- *     maxDepth?: number,
- * }} [options]
- * @returns {Promise<{
- *     status: 'solved' | 'unsolved' | 'aborted',
- *     moves: Array<{ vehicleIndex: number, direction: keyof typeof DIRECTION_OFFSETS, steps: number }>,
- *     stateHistory: Array<Array<{ row: number, col: number }>>,
- *     actions: string[],
- *     metrics: {
- *         explored: number,
- *         frontier: number,
- *         depth: number,
- *         timeMs: number,
- *     },
- *     vehicleLabels: string[],
- * }>}
- */
-/**
- * Explora el espacio de estados usando una pila (DFS).
- * Útil para comparar con backtracking aplicando un límite de profundidad opcional.
- *
- * @param {import('../models/boardRenderer.js').ParsedBoard} boardData
- * @param {Object} [options]
- * @param {AbortSignal} [options.signal]
- * @param {(metrics: { explored:number, frontier:number, depth:number, timeMs:number }) => void} [options.onProgress]
- * @param {number} [options.maxDepth] Profundidad máxima antes de cortar la rama (∞ por defecto).
+ * @param {import('../models/boardRenderer.js').ParsedBoard} boardData - Parsed board with vehicles and exit.
+ * @param {Object} [options] - Optional solver configuration.
+ * @param {AbortSignal} [options.signal] - Abort signal to cancel the search.
+ * @param {(metrics: Metrics) => void} [options.onProgress] - Progress callback (sampled every ~PROGRESS_INTERVAL ms).
+ * @param {number} [options.maxDepth] - Maximum search depth (∞ by default).
  * @returns {Promise<{
  *   status: 'solved' | 'unsolved' | 'aborted',
- *   moves: Array<{ vehicleIndex:number, direction:keyof typeof DIRECTION_OFFSETS, steps:number }>,
- *   stateHistory: Array<Array<{ row:number, col:number }>>,
+ *   moves: Move[],
+ *   stateHistory: Position[][],
  *   actions: string[],
- *   metrics: { explored:number, frontier:number, depth:number, timeMs:number },
+ *   metrics: Metrics,
  *   vehicleLabels: string[],
- * }>}
+ * }>} Solver result and telemetry.
  */
 const solveWithDfs = async (boardData, options = {}) => {
     const context = createContext(boardData);
